@@ -3,21 +3,27 @@ import { Floor, Receipt, ViewState } from './types';
 import { Dashboard } from './components/Dashboard';
 import { ReceiptsManager } from './components/ReceiptsManager';
 import { BaseModal } from './components/BaseModal';
-import { LayoutDashboard, ReceiptText, Building2, Settings, Download, Upload, Trash2, Save, Smartphone, Share, PlusSquare, MoreVertical, Github } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Building2, Settings, Download, Upload, Trash2, Save, Smartphone, Share, PlusSquare, MoreVertical, Github, X, QrCode, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Button } from './components/Button';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ViewState>('dashboard');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [customQrUrl, setCustomQrUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
-  // Capture the PWA install prompt
+  // Capture the PWA install prompt & Get URL
   useEffect(() => {
+    const url = window.location.href;
+    setCurrentUrl(url);
+    setCustomQrUrl(url);
+
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -56,10 +62,8 @@ const App: React.FC = () => {
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
         setIsInstallable(false);
+        setIsInstallModalOpen(false);
       }
-    } else {
-      // Toggle help instructions instead of alert
-      setShowInstallHelp(!showInstallHelp);
     }
   };
 
@@ -132,7 +136,26 @@ const App: React.FC = () => {
               <span className="font-bold text-xl tracking-tight sm:hidden">Hari PG</span>
             </div>
             
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <button
+                onClick={() => setIsInstallModalOpen(true)}
+                className="hidden sm:flex items-center px-3 py-2 rounded-md text-sm font-medium text-blue-100 hover:bg-blue-600 transition-colors"
+                title="Install App"
+              >
+                <Smartphone size={18} className="mr-2" />
+                <span>Install App</span>
+              </button>
+
+              <button
+                onClick={() => setIsInstallModalOpen(true)}
+                className="sm:hidden p-2 rounded-md text-blue-100 hover:bg-blue-600 transition-colors"
+                title="Install App"
+              >
+                <Smartphone size={20} />
+              </button>
+
+              <div className="h-6 w-px bg-blue-500 mx-1"></div>
+
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
@@ -196,44 +219,84 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* Settings Modal */}
+      {/* Install App Modal */}
       <BaseModal
-        isOpen={isSettingsOpen}
-        onClose={() => { setIsSettingsOpen(false); setShowInstallHelp(false); }}
-        title="App Settings & Data"
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        title="Get Mobile App"
       >
-        <div className="space-y-6">
-          {/* Install Section */}
-          <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-            <h4 className="font-medium text-green-800 mb-2 flex items-center">
-              <Smartphone size={18} className="mr-2" /> Download App
-            </h4>
-            <p className="text-sm text-green-700 mb-3">
-              Install this app on your phone for easier access and full-screen mode.
-            </p>
-            <Button 
-              onClick={handleInstallClick} 
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isInstallable ? 'Install App Now' : (showInstallHelp ? 'Hide Instructions' : 'How to Install')}
-            </Button>
-            
-            {showInstallHelp && (
-              <div className="mt-4 bg-white p-4 rounded border border-green-200 text-sm space-y-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="space-y-4">
+           {/* QR Code Section - Visible on Desktop/Tablet to help transfer to mobile */}
+           <div className="hidden md:flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+             <div className="flex items-center space-x-2 mb-3 text-gray-800 font-semibold">
+                <QrCode size={20} />
+                <span>Scan to Open on Phone</span>
+             </div>
+             
+             {/* Editable URL Logic */}
+             {customQrUrl && (
+               <div className="bg-white p-2 rounded shadow-sm border mb-3">
+                 <img 
+                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(customQrUrl)}`}
+                   alt="App QR Code"
+                   className="w-32 h-32"
+                 />
+               </div>
+             )}
+             
+             <div className="w-full max-w-[280px] space-y-2">
+                <label className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider block mb-1">
+                  App URL (Edit if you see 404)
+                </label>
+                <div className="flex items-center space-x-1 border border-gray-300 rounded-md px-2 py-1 bg-white">
+                  <LinkIcon size={12} className="text-gray-400" />
+                  <input 
+                    type="text" 
+                    value={customQrUrl}
+                    onChange={(e) => setCustomQrUrl(e.target.value)}
+                    className="flex-1 text-xs text-gray-700 focus:outline-none"
+                    placeholder="https://your-public-url.com"
+                  />
+                </div>
+                <div className="flex items-start space-x-2 bg-amber-50 p-2 rounded border border-amber-100">
+                  <AlertCircle size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-amber-700 leading-tight">
+                    <strong>Getting a 404 Error?</strong> The current preview link is private. You must <strong>deploy</strong> this code to a public host (like Vercel, Netlify) to access it on your phone.
+                  </p>
+                </div>
+             </div>
+           </div>
+
+           <div className="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg">
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-2">
+                 <Building2 size={24} className="text-blue-600" />
+              </div>
+              <h3 className="font-bold text-gray-900">Hari PG Manager</h3>
+           </div>
+
+           {isInstallable ? (
+              <Button 
+                onClick={handleInstallClick} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg"
+              >
+                Install App Now
+              </Button>
+           ) : (
+              <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* iOS Section */}
                 <div>
-                  <h5 className="font-bold flex items-center text-gray-800 mb-2">
+                  <h5 className="font-bold flex items-center text-gray-800 mb-2 border-b pb-2">
                     <span className="text-xl mr-2">🍎</span> iOS (iPhone/iPad)
                   </h5>
-                  <div className="space-y-2 pl-2">
+                  <div className="space-y-3 pl-1 text-sm">
                     <div className="flex items-start">
-                      <div className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">1</div>
+                      <span className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">1</span>
                       <p className="text-gray-600">
                         Tap the <span className="font-bold text-blue-600 inline-flex items-center">Share <Share size={12} className="ml-1" /></span> button in Safari.
                       </p>
                     </div>
                     <div className="flex items-start">
-                      <div className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">2</div>
+                      <span className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">2</span>
                       <p className="text-gray-600">
                         Scroll down and tap <span className="font-bold inline-flex items-center text-gray-800">Add to Home Screen <PlusSquare size={12} className="ml-1" /></span>.
                       </p>
@@ -241,35 +304,44 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
-                  <h5 className="font-bold flex items-center text-gray-800 mb-2">
+                {/* Android Section */}
+                <div>
+                  <h5 className="font-bold flex items-center text-gray-800 mb-2 border-b pb-2">
                     <span className="text-xl mr-2">🤖</span> Android (Chrome)
                   </h5>
-                  <div className="space-y-2 pl-2">
+                  <div className="space-y-3 pl-1 text-sm">
                     <div className="flex items-start">
-                      <div className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">1</div>
+                      <span className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">1</span>
                       <p className="text-gray-600">
                         Tap the <span className="font-bold text-gray-700 inline-flex items-center">Menu <MoreVertical size={12} className="ml-1" /></span> (3 dots) icon at the top right.
                       </p>
                     </div>
                     <div className="flex items-start">
-                      <div className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">2</div>
+                      <span className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">2</span>
                       <p className="text-gray-600">
-                        Select <span className="font-bold text-gray-800">Install App</span> or <span className="font-bold text-gray-800">Add to Home screen</span> from the list.
-                      </p>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-gray-100 text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">3</div>
-                      <p className="text-gray-600">
-                        Tap <strong>Install</strong> or <strong>Add</strong> to confirm.
+                        Select <span className="font-bold text-gray-800">Install App</span> or <span className="font-bold text-gray-800">Add to Home screen</span>.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+           )}
+           
+           <div className="pt-2">
+            <Button variant="secondary" className="w-full" onClick={() => setIsInstallModalOpen(false)}>
+              Close
+            </Button>
+           </div>
+        </div>
+      </BaseModal>
 
+      {/* Settings Modal - Simplified */}
+      <BaseModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        title="App Settings & Data"
+      >
+        <div className="space-y-6">
           {/* Backup Section */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h4 className="font-medium text-blue-800 mb-2 flex items-center">

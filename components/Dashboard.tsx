@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Floor, Room, Resident } from '../types';
+import { Floor, Resident } from '../types';
 import { Button } from './Button';
 import { BaseModal } from './BaseModal';
 import { Plus, Trash2, User, Home, Layers, ChevronDown, ChevronRight, UserPlus, Phone, Edit2 } from 'lucide-react';
